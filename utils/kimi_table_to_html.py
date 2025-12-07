@@ -10,7 +10,13 @@ from typing import Optional, Dict, Any
 # 尝试加载 .env 文件中的环境变量
 try:
     from dotenv import load_dotenv
-    load_dotenv()
+    # 计算 .env 文件路径（项目根目录）
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+    else:
+        # 如果指定路径不存在，尝试加载当前目录的 .env
+        load_dotenv()
 except ImportError:
     # 如果没有安装 python-dotenv，使用默认的环境变量
     pass
@@ -279,12 +285,12 @@ class KimiTableToHTML:
 # 使用示例
 if __name__ == "__main__":
     # 初始化工具类
-    converter = KimiTableToHTML(api_key="your_api_key_here")
+    converter = KimiTableToHTML()
     
     # 单个图片转换
-    result = converter.table_image_to_html("table_image.jpg")
+    result = converter.table_image_to_html(r"D:\\data\\comfyui-image\\尺码1.png")
     converter.save_html(result["html_code"], "output.html")
-    print("HTML 代码已生成并保存到 output.html")
+    print("生成的 HTML 代码已保存到 output.html")
     
     # 批量转换
     # images = ["table1.jpg", "table2.jpg", "table3.jpg"]
