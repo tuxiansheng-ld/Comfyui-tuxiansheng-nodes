@@ -2,25 +2,9 @@
 Kimi API 工具类 - 根据图片表格内容生成 HTML 代码
 """
 import os
-import json
 import base64
 import requests
 from typing import Optional, Dict, Any
-
-# 尝试加载 .env 文件中的环境变量
-try:
-    from dotenv import load_dotenv
-    # 计算 .env 文件路径（项目根目录）
-    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
-    if os.path.exists(env_path):
-        load_dotenv(env_path)
-    else:
-        # 如果指定路径不存在，尝试加载当前目录的 .env
-        load_dotenv()
-except ImportError:
-    # 如果没有安装 python-dotenv，使用默认的环境变量
-    pass
-
 
 class KimiTableToHTML:
     """使用 Kimi API 将图片表格转换为 HTML 代码的工具类"""
@@ -37,7 +21,7 @@ class KimiTableToHTML:
             raise ValueError("API key is required. Please provide api_key or set KIMI_API_KEY environment variable.")
         
         self.base_url = "https://api.moonshot.cn/v1"
-        self.model = "moonshot-v1-8k"  # 默认使用 8k 版本
+        self.model = "moonshot-v1-8k-vision-preview"  # 默认使用 8k 版本
         self.headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {self.api_key}"
@@ -54,41 +38,38 @@ class KimiTableToHTML:
     
     def encode_image(self, image_path: str) -> str:
         """
-        将图片编码为 base64 格式
+        将图片编码为 base64 格式的 data URL
         
         Args:
             image_path: 图片文件路径
             
         Returns:
-            base64 编码的图片字符串
+            base64 编码的 data URL 格式字符串
         """
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+        with open(image_path, "rb") as f:
+            image_data = f.read()
+        
+        # 获取图片扩展名（去掉点号）
+        ext = os.path.splitext(image_path)[1][1:].lower()
+        # 如果是 jpg，转换为 jpeg
+        if ext == 'jpg':
+            ext = 'jpeg'
+        
+        # 编码为 base64 并构建 data URL
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+        return f"data:image/{ext};base64,{base64_image}"
     
-    def upload_image(self, image_path: str) -> str:
+    def encode_image_to_data_url(self, image_path: str) -> str:
         """
-        上传图片到 Kimi 服务器
+        将图片编码为 base64 格式的 data URL（别名方法，保持兼容性）
         
         Args:
             image_path: 图片文件路径
             
         Returns:
-            上传后的文件 ID
+            base64 编码的 data URL 格式字符串
         """
-        url = f"{self.base_url}/files"
-        
-        with open(image_path, 'rb') as f:
-            files = {
-                'file': (os.path.basename(image_path), f, 'image/jpeg')
-            }
-            headers = {
-                "Authorization": f"Bearer {self.api_key}"
-            }
-            response = requests.post(url, headers=headers, files=files)
-            response.raise_for_status()
-            
-        result = response.json()
-        return result.get('id')
+        return self.encode_image(image_path)
     
     def table_image_to_html(
         self, 
@@ -109,8 +90,8 @@ class KimiTableToHTML:
         Returns:
             包含 HTML 代码和原始响应的字典
         """
-        # 上传图片
-        file_id = self.upload_image(image_path)
+        # 将图片编码为 base64 data URL
+        image_url = self.encode_image(image_path)
         
         # 构建默认提示词
         if custom_prompt is None:
@@ -135,7 +116,7 @@ class KimiTableToHTML:
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": f"file://{file_id}"
+                            "url": image_url  # 使用 base64 编码的 data URL
                         }
                     },
                     {
@@ -155,7 +136,7 @@ class KimiTableToHTML:
         return {
             "html_code": html_code,
             "raw_response": response,
-            "file_id": file_id
+            "image_path": image_path
         }
     
     def _call_api(
@@ -264,8 +245,7 @@ class KimiTableToHTML:
                 results.append({
                     "image_path": image_path,
                     "output_path": output_path,
-                    "success": True,
-                    "file_id": result["file_id"]
+                    "success": True
                 })
                 
                 print(f"✓ 已转换: {image_path} -> {output_path}")
@@ -284,6 +264,22 @@ class KimiTableToHTML:
 
 # 使用示例
 if __name__ == "__main__":
+
+    # 尝试加载 .env 文件中的环境变量
+    try:
+        from dotenv import load_dotenv
+        # 计算 .env 文件路径（项目根目录）
+        env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+        if os.path.exists(env_path):
+            load_dotenv(env_path)
+        else:
+            # 如果指定路径不存在，尝试加载当前目录的 .env
+            load_dotenv()
+    except ImportError:
+        # 如果没有安装 python-dotenv，使用默认的环境变量
+        pass
+
+    print(os.getenv("KIMI_API_KEY"))
     # 初始化工具类
     converter = KimiTableToHTML()
     

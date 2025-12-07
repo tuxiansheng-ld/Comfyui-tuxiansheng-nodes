@@ -40,7 +40,7 @@ class TestKimiTableToHTML(unittest.TestCase):
         
         self.assertEqual(converter.api_key, self.test_api_key)
         self.assertEqual(converter.base_url, "https://api.moonshot.cn/v1")
-        self.assertEqual(converter.model, "moonshot-v1-8k")
+        self.assertEqual(converter.model, "moonshot-v1-8k-vision-preview")
         self.assertIn("Authorization", converter.headers)
         self.assertEqual(converter.headers["Authorization"], f"Bearer {self.test_api_key}")
     
@@ -69,7 +69,7 @@ class TestKimiTableToHTML(unittest.TestCase):
     
     @patch("builtins.open", new_callable=mock_open, read_data=b"fake_image_data")
     def test_encode_image(self, mock_file):
-        """测试图片编码"""
+        """测试图片编码为 data URL"""
         converter = KimiTableToHTML(api_key=self.test_api_key)
         
         result = converter.encode_image(self.test_image_path)
@@ -77,46 +77,12 @@ class TestKimiTableToHTML(unittest.TestCase):
         # 验证文件被正确打开
         mock_file.assert_called_once_with(self.test_image_path, "rb")
         
-        # 验证返回的是 base64 字符串
+        # 验证返回的是 data URL 格式
         self.assertIsInstance(result, str)
-        self.assertTrue(len(result) > 0)
+        self.assertTrue(result.startswith("data:image/"))
+        self.assertIn("base64,", result)
     
-    @patch("requests.post")
-    @patch("builtins.open", new_callable=mock_open, read_data=b"fake_image_data")
-    def test_upload_image_success(self, mock_file, mock_post):
-        """测试图片上传成功"""
-        converter = KimiTableToHTML(api_key=self.test_api_key)
-        
-        # 模拟成功响应
-        mock_response = Mock()
-        mock_response.json.return_value = {"id": self.test_file_id}
-        mock_response.raise_for_status = Mock()
-        mock_post.return_value = mock_response
-        
-        result = converter.upload_image(self.test_image_path)
-        
-        # 验证返回文件 ID
-        self.assertEqual(result, self.test_file_id)
-        
-        # 验证 API 调用
-        mock_post.assert_called_once()
-        call_args = mock_post.call_args
-        self.assertIn("https://api.moonshot.cn/v1/files", call_args[0])
-    
-    @patch("requests.post")
-    @patch("builtins.open", new_callable=mock_open, read_data=b"fake_image_data")
-    def test_upload_image_failure(self, mock_file, mock_post):
-        """测试图片上传失败"""
-        converter = KimiTableToHTML(api_key=self.test_api_key)
-        
-        # 模拟失败响应
-        mock_response = Mock()
-        mock_response.raise_for_status.side_effect = Exception("Upload failed")
-        mock_post.return_value = mock_response
-        
-        with self.assertRaises(Exception):
-            converter.upload_image(self.test_image_path)
-    
+
     def test_extract_html_with_html_block(self):
         """测试从响应中提取 HTML 代码（带 html 标记）"""
         converter = KimiTableToHTML(api_key=self.test_api_key)
@@ -206,14 +172,14 @@ class TestKimiTableToHTML(unittest.TestCase):
         mock_file.assert_called_once_with(output_path, 'w', encoding='utf-8')
         mock_file().write.assert_called_once_with(html_code)
     
-    @patch.object(KimiTableToHTML, 'upload_image')
+    @patch.object(KimiTableToHTML, 'encode_image')
     @patch.object(KimiTableToHTML, '_call_api')
-    def test_table_image_to_html_success(self, mock_call_api, mock_upload):
+    def test_table_image_to_html_success(self, mock_call_api, mock_encode):
         """测试表格图片转 HTML 成功"""
         converter = KimiTableToHTML(api_key=self.test_api_key)
         
-        # 模拟上传返回
-        mock_upload.return_value = self.test_file_id
+        # 模拟图片编码返回 data URL
+        mock_encode.return_value = "data:image/png;base64,fake_base64_data"
         
         # 模拟 API 响应
         mock_call_api.return_value = {
@@ -229,21 +195,21 @@ class TestKimiTableToHTML(unittest.TestCase):
         # 验证返回结果
         self.assertIn("html_code", result)
         self.assertIn("raw_response", result)
-        self.assertIn("file_id", result)
-        self.assertEqual(result["file_id"], self.test_file_id)
+        self.assertIn("image_path", result)
+        self.assertEqual(result["image_path"], self.test_image_path)
         self.assertIn("<table>", result["html_code"])
         
         # 验证方法被调用
-        mock_upload.assert_called_once_with(self.test_image_path)
+        mock_encode.assert_called_once_with(self.test_image_path)
         mock_call_api.assert_called_once()
     
-    @patch.object(KimiTableToHTML, 'upload_image')
+    @patch.object(KimiTableToHTML, 'encode_image')
     @patch.object(KimiTableToHTML, '_call_api')
-    def test_table_image_to_html_with_custom_prompt(self, mock_call_api, mock_upload):
+    def test_table_image_to_html_with_custom_prompt(self, mock_call_api, mock_encode):
         """测试使用自定义提示词"""
         converter = KimiTableToHTML(api_key=self.test_api_key)
         
-        mock_upload.return_value = self.test_file_id
+        mock_encode.return_value = "data:image/png;base64,fake_base64_data"
         mock_call_api.return_value = {
             "choices": [{
                 "message": {"content": "<table></table>"}
@@ -271,7 +237,7 @@ class TestKimiTableToHTML(unittest.TestCase):
         # 模拟转换返回
         mock_convert.return_value = {
             "html_code": "<table></table>",
-            "file_id": self.test_file_id
+            "image_path": "test.jpg"
         }
         
         image_paths = ["test1.jpg", "test2.jpg", "test3.jpg"]
@@ -306,7 +272,7 @@ class TestKimiTableToHTML(unittest.TestCase):
                 raise Exception("转换失败")
             return {
                 "html_code": "<table></table>",
-                "file_id": self.test_file_id
+                "image_path": image_path
             }
         
         mock_convert.side_effect = side_effect
@@ -354,7 +320,7 @@ class TestKimiTableToHTMLIntegration(unittest.TestCase):
             
             # 验证返回结果
             self.assertIn("html_code", result)
-            self.assertIn("file_id", result)
+            self.assertIn("image_path", result)
             self.assertTrue(len(result["html_code"]) > 0)
             
             # 保存测试结果
