@@ -2,9 +2,8 @@
 Kimi API 工具类 - 根据图片表格内容生成 HTML 代码
 """
 import os
-import base64
-import requests
 from typing import Optional, Dict, Any
+from .kimi_client import KimiClient
 
 class KimiTableToHTML:
     """使用 Kimi API 将图片表格转换为 HTML 代码的工具类"""
@@ -16,25 +15,19 @@ class KimiTableToHTML:
         Args:
             api_key: Kimi API 密钥，如果不提供则从环境变量 KIMI_API_KEY 读取
         """
-        self.api_key = api_key or os.getenv("KIMI_API_KEY")
-        if not self.api_key:
-            raise ValueError("API key is required. Please provide api_key or set KIMI_API_KEY environment variable.")
-        
-        self.base_url = "https://api.moonshot.cn/v1"
-        self.model = "moonshot-v1-8k-vision-preview"  # 默认使用 8k 版本
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}"
-        }
+        # 使用 KimiClient 作为底层客户端
+        self.client = KimiClient(api_key=api_key)
+        # 默认使用视觉模型
+        self.client.set_model("moonshot-v1-8k-vision-preview")
     
     def set_model(self, model: str):
         """
         设置使用的模型版本
         
         Args:
-            model: 模型名称 (moonshot-v1-8k, moonshot-v1-32k, moonshot-v1-128k)
+            model: 模型名称 (moonshot-v1-8k-vision-preview, moonshot-v1-32k-vision-preview 等)
         """
-        self.model = model
+        self.client.set_model(model)
     
     def encode_image(self, image_path: str) -> str:
         """
@@ -46,18 +39,7 @@ class KimiTableToHTML:
         Returns:
             base64 编码的 data URL 格式字符串
         """
-        with open(image_path, "rb") as f:
-            image_data = f.read()
-        
-        # 获取图片扩展名（去掉点号）
-        ext = os.path.splitext(image_path)[1][1:].lower()
-        # 如果是 jpg，转换为 jpeg
-        if ext == 'jpg':
-            ext = 'jpeg'
-        
-        # 编码为 base64 并构建 data URL
-        base64_image = base64.b64encode(image_data).decode('utf-8')
-        return f"data:image/{ext};base64,{base64_image}"
+        return self.client.encode_image(image_path)
     
     def encode_image_to_data_url(self, image_path: str) -> str:
         """
@@ -90,9 +72,6 @@ class KimiTableToHTML:
         Returns:
             包含 HTML 代码和原始响应的字典
         """
-        # 将图片编码为 base64 data URL
-        image_url = self.encode_image(image_path)
-        
         # 构建默认提示词
         if custom_prompt is None:
             custom_prompt = """请仔细分析这张图片中的表格内容，然后生成对应的 HTML 代码。要求：
@@ -104,98 +83,49 @@ class KimiTableToHTML:
 
 请只返回完整的 HTML 代码，包含 <style> 标签的样式定义。"""
         
-        # 构建请求消息
-        messages = [
-            {
-                "role": "system",
-                "content": "你是一个专业的前端开发专家，擅长将表格内容转换为结构化的 HTML 代码。"
-            },
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": image_url  # 使用 base64 编码的 data URL
-                        }
-                    },
-                    {
-                        "type": "text",
-                        "text": custom_prompt
-                    }
-                ]
-            }
-        ]
+        # 系统提示词
+        system_prompt = "你是一个专业的前端开发专家，擅长将表格内容转换为结构化的 HTML 代码。要求样式必须与图片一模一样"
         
-        # 调用 Kimi API
-        response = self._call_api(messages, temperature, max_tokens)
+        # 使用 KimiClient 调用 API
+        result = self.client.chat(
+            prompt=custom_prompt,
+            image_paths=image_path,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
         
         # 提取 HTML 代码
-        html_code = self._extract_html(response)
+        html_code = self._extract_html(result["content"])
         
         return {
             "html_code": html_code,
-            "raw_response": response,
-            "image_path": image_path
+            "raw_response": result["raw_response"],
+            "image_path": image_path,
+            "usage": result["usage"]
         }
     
-    def _call_api(
-        self, 
-        messages: list,
-        temperature: float = 0.3,
-        max_tokens: int = 4000
-    ) -> Dict[str, Any]:
+    def _extract_html(self, content: str) -> str:
         """
-        调用 Kimi API
+        从 API 响应内容中提取 HTML 代码
         
         Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大 token 数
-            
-        Returns:
-            API 响应结果
-        """
-        url = f"{self.base_url}/chat/completions"
-        
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": temperature,
-            "max_tokens": max_tokens
-        }
-        
-        response = requests.post(url, headers=self.headers, json=payload)
-        response.raise_for_status()
-        
-        return response.json()
-    
-    def _extract_html(self, response: Dict[str, Any]) -> str:
-        """
-        从 API 响应中提取 HTML 代码
-        
-        Args:
-            response: API 响应结果
+            content: API 返回的文本内容
             
         Returns:
             提取的 HTML 代码
         """
-        if "choices" in response and len(response["choices"]) > 0:
-            content = response["choices"][0]["message"]["content"]
-            
-            # 尝试提取代码块中的 HTML
-            if "```html" in content:
-                start = content.find("```html") + 7
-                end = content.find("```", start)
-                return content[start:end].strip()
-            elif "```" in content:
-                start = content.find("```") + 3
-                end = content.find("```", start)
-                return content[start:end].strip()
-            else:
-                return content.strip()
-        
-        return ""
+        # 尝试提取代码块中的 HTML
+        if "```html" in content:
+            start = content.find("```html") + 7
+            end = content.find("```", start)
+            return content[start:end].strip()
+        elif "```" in content:
+            start = content.find("```") + 3
+            end = content.find("```", start)
+            return content[start:end].strip()
+        else:
+            return content.strip()
     
     def save_html(self, html_code: str, output_path: str):
         """
@@ -279,12 +209,11 @@ if __name__ == "__main__":
         # 如果没有安装 python-dotenv，使用默认的环境变量
         pass
 
-    print(os.getenv("KIMI_API_KEY"))
     # 初始化工具类
     converter = KimiTableToHTML()
     
     # 单个图片转换
-    result = converter.table_image_to_html(r"D:\\data\\comfyui-image\\尺码1.png")
+    result = converter.table_image_to_html(r"D:\\data\\comfyui-image\\尺码2.png")
     converter.save_html(result["html_code"], "output.html")
     print("生成的 HTML 代码已保存到 output.html")
     

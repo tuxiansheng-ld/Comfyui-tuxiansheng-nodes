@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "size": "S",
+      "back_length": "41",
+      "shoulder_width": "35",
+      "bust": "92",
+      "hem": "88",
+      "sleeve_length": "63"
+    },
+    {
+      "size": "M",
+      "back_length": "43",
+      "shoulder_width": "36",
+      "bust": "96",
+      "hem": "92",
+      "sleeve_length": "64.2"
+    },
+    {
+      "size": "L",
+      "back_length": "44",
+      "shoulder_width": "37",
+      "bust": "100",
+      "hem": "96",
+      "sleeve_length": "65.4"
+    }
+  ]
+}
