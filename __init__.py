@@ -1,10 +1,12 @@
 from typing_extensions import override
 
 from comfy_api.latest import ComfyExtension, io
+from dotenv import load_dotenv
 
 # Import our nodes
 from .StringToListNode import StringToListNode
 
+load_dotenv(".env")
 
 class TuXsExtension(ComfyExtension):
     @override
