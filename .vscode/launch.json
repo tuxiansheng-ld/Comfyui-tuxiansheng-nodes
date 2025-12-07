@@ -93,6 +93,30 @@
             "python": "${command:python.interpreterPath}"
         },
         {
+            "name": "Debug: Kimi 表格转 JSON",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/utils/kimi_table_to_json.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+            },
+            "python": "${command:python.interpreterPath}"
+        },
+        {
+            "name": "Debug: TableRenderer 示例",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/utils/TableRenderer.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+            },
+            "python": "${command:python.interpreterPath}"
+        },
+        {
             "name": "Debug: 当前 Python 文件",
             "type": "python",
             "request": "launch",

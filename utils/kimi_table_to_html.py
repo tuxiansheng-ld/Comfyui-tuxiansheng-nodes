@@ -2,8 +2,16 @@
 Kimi API 工具类 - 根据图片表格内容生成 HTML 代码
 """
 import os
+import sys
 from typing import Optional, Dict, Any
-from .kimi_client import KimiClient
+
+# 处理相对导入，支持直接运行和作为模块导入
+try:
+    from .kimi_client import KimiClient
+except ImportError:
+    # 如果相对导入失败，尝试绝对导入
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from utils.kimi_client import KimiClient
 
 class KimiTableToHTML:
     """使用 Kimi API 将图片表格转换为 HTML 代码的工具类"""
@@ -213,7 +221,7 @@ if __name__ == "__main__":
     converter = KimiTableToHTML()
     
     # 单个图片转换
-    result = converter.table_image_to_html(r"D:\\data\\comfyui-image\\尺码2.png")
+    result = converter.table_image_to_html(r"D:\\data\\comfyui-image\\尺码3.png")
     converter.save_html(result["html_code"], "output.html")
     print("生成的 HTML 代码已保存到 output.html")
     

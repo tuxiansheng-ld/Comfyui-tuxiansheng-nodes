@@ -1,0 +1,64 @@
+{
+  "data": [
+    {
+      "size": "XS",
+      "height_150": "XS",
+      "height_155": "XS",
+      "height_160": "XS",
+      "height_165": "XS",
+      "height_170": "XS",
+      "height_175": "XS",
+      "weight_range": "65-80"
+    },
+    {
+      "size": "S",
+      "height_150": "S",
+      "height_155": "S",
+      "height_160": "S",
+      "height_165": "S",
+      "height_170": "S",
+      "height_175": "S",
+      "weight_range": "80-90"
+    },
+    {
+      "size": "M",
+      "height_150": "M",
+      "height_155": "M",
+      "height_160": "M",
+      "height_165": "M",
+      "height_170": "M",
+      "height_175": "M",
+      "weight_range": "90-110"
+    },
+    {
+      "size": "L",
+      "height_150": "L",
+      "height_155": "L",
+      "height_160": "L",
+      "height_165": "L",
+      "height_170": "L",
+      "height_175": "L",
+      "weight_range": "110-120"
+    },
+    {
+      "size": "XL",
+      "height_150": "XL",
+      "height_155": "XL",
+      "height_160": "XL",
+      "height_165": "XL",
+      "height_170": "XL",
+      "height_175": "XL",
+      "weight_range": "120-140"
+    },
+    {
+      "size": "2XL",
+      "height_150": "2XL",
+      "height_155": "2XL",
+      "height_160": "2XL",
+      "height_165": "2XL",
+      "height_170": "2XL",
+      "height_175": "2XL",
+      "weight_range": "140-160"
+    }
+  ]
+}
