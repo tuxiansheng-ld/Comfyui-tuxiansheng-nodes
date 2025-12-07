@@ -117,6 +117,31 @@
             "python": "${command:python.interpreterPath}"
         },
         {
+            "name": "Debug: 工作流集成测试",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test_workflow_integration.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+            },
+            "python": "${command:python.interpreterPath}"
+        },
+        {
+            "name": "Debug: 工作流示例",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test_workflow_integration.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+            },
+            "python": "${command:python.interpreterPath}",
+            "args": ["--example"]
+        },
+        {
             "name": "Debug: 当前 Python 文件",
             "type": "python",
             "request": "launch",
