@@ -12,6 +12,16 @@ from io import BytesIO
 # 添加父目录到路径以便导入
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 加载 .env 文件中的环境变量
+try:
+    from dotenv import load_dotenv
+    # 加载项目根目录的 .env 文件
+    env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+    load_dotenv(env_path)
+except ImportError:
+    # 如果没有安装 python-dotenv，使用默认的环境变量
+    pass
+
 from utils import KimiTableToHTML
 
 

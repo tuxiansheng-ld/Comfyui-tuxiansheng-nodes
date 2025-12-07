@@ -7,14 +7,33 @@
 ## 安装依赖
 
 ```bash
-pip install requests
+# 在 comfyui conda 环境中安装
+conda activate comfyui
+pip install -r requirements.txt
+
+# 或者手动安装
+pip install requests python-dotenv
 ```
 
 ## 配置 API Key
 
-有两种方式配置 Kimi API Key：
+有三种方式配置 Kimi API Key：
 
-### 方法 1: 环境变量
+### 方法 1：使用 .env 文件（推荐）
+
+在项目根目录创建 `.env` 文件：
+
+```bash
+# 复制示例文件
+cp .env.example .env
+
+# 编辑 .env 文件，填入你的 API key
+# KIMI_API_KEY=your_api_key_here
+```
+
+工具类会自动使用 `python-dotenv` 加载 `.env` 文件中的环境变量。
+
+### 方法 2：环境变量
 ```bash
 # Windows PowerShell
 $env:KIMI_API_KEY="your_api_key_here"
@@ -26,7 +45,7 @@ set KIMI_API_KEY=your_api_key_here
 export KIMI_API_KEY=your_api_key_here
 ```
 
-### 方法 2: 代码中直接传入
+### 方法 3：代码中直接传入
 ```python
 from utils import KimiTableToHTML
 

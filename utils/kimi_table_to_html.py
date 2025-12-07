@@ -7,6 +7,14 @@ import base64
 import requests
 from typing import Optional, Dict, Any
 
+# 尝试加载 .env 文件中的环境变量
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    # 如果没有安装 python-dotenv，使用默认的环境变量
+    pass
+
 
 class KimiTableToHTML:
     """使用 Kimi API 将图片表格转换为 HTML 代码的工具类"""
