@@ -149,7 +149,7 @@ if __name__ == '__main__':
             screenshotter.capture_from_string(html_string, "string_screenshot.png", width=800, height=400)
 
             # 2. 从HTML文件截图
-            screenshotter.capture_from_file("D:/ComfyUI/custom_nodes/Comfyui-tuxiansheng-nodes/table_template/style1.html", "file_screenshot.png", width=800, height=600)
+            screenshotter.capture_from_file("D:/ComfyUI/custom_nodes/Comfyui-tuxiansheng-nodes/output_table.html", "file_screenshot.png", width=600, height=500)
 
     except Exception as e:
         print(f"执行过程中发生错误: {e}")

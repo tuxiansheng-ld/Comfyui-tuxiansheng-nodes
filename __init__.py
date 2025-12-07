@@ -6,7 +6,8 @@ from dotenv import load_dotenv
 # Import our nodes
 from .StringToListNode import StringToListNode
 
-load_dotenv(".env")
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+load_dotenv(env_path)
 
 class TuXsExtension(ComfyExtension):
     @override
