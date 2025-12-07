@@ -19,7 +19,11 @@ env/
 .venv
 
 # IDE 配置文件
-.vscode/
+# 保留 launch.json 和 settings.json，但忽略个人配置
+.vscode/*
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/DEBUG_GUIDE.md
 .idea/
 *.swp
 *.swo

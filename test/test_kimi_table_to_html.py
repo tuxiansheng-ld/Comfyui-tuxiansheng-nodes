@@ -21,7 +21,7 @@ class TestKimiTableToHTML(unittest.TestCase):
     def setUp(self):
         """测试前准备"""
         self.test_api_key = "test_api_key_12345"
-        self.test_image_path = "test_table.jpg"
+        self.test_image_path = "D:\\data\\comfyui-image\\尺码1.png"
         self.test_file_id = "file_test_123456"
         
     def test_init_with_api_key(self):

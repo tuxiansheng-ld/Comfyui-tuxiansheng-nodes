@@ -1,0 +1,115 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug: 运行所有测试",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/test_kimi_table_to_html.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}",
+            "purpose": ["debug-test"],
+            "args": []
+        },
+        {
+            "name": "Debug: 运行测试脚本",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/test/run_tests.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}",
+            "args": []
+        },
+        {
+            "name": "Debug: 当前测试文件",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}",
+            "args": [
+                "discover",
+                "-s",
+                "${workspaceFolder}/test",
+                "-p",
+                "test_*.py",
+                "-v"
+            ]
+        },
+        {
+            "name": "Debug: 单个测试用例",
+            "type": "python",
+            "request": "launch",
+            "module": "unittest",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}",
+            "args": [
+                "test.test_kimi_table_to_html.TestKimiTableToHTML.test_init_with_api_key"
+            ]
+        },
+        {
+            "name": "Debug: Pytest 运行所有测试",
+            "type": "python",
+            "request": "launch",
+            "module": "pytest",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}",
+            "args": [
+                "${workspaceFolder}/test",
+                "-v",
+                "-s"
+            ]
+        },
+        {
+            "name": "Debug: Kimi 工具类示例",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/utils/kimi_table_to_html.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}"
+        },
+        {
+            "name": "Debug: 当前 Python 文件",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+            },
+            "python": "${command:python.interpreterPath}"
+        }
+    ]
+}

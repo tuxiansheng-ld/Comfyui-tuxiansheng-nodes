@@ -1,0 +1,69 @@
+{
+    // Python 解释器配置
+    "python.defaultInterpreterPath": "conda://comfyui",
+    
+    // 测试配置
+    "python.testing.unittestEnabled": true,
+    "python.testing.pytestEnabled": false,
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "./test",
+        "-p",
+        "test_*.py"
+    ],
+    
+    // 代码格式化
+    "python.formatting.provider": "autopep8",
+    "editor.formatOnSave": false,
+    
+    // 代码检查
+    "python.linting.enabled": true,
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": false,
+    
+    // 自动补全
+    "python.autoComplete.extraPaths": [
+        "${workspaceFolder}",
+        "${workspaceFolder}/utils"
+    ],
+    
+    // 终端配置
+    "terminal.integrated.env.windows": {
+        "PYTHONPATH": "${workspaceFolder}",
+        "KIMI_API_KEY": "${env:KIMI_API_KEY}"
+    },
+    
+    // 文件关联
+    "files.associations": {
+        "*.py": "python"
+    },
+    
+    // 排除的文件和文件夹
+    "files.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.pytest_cache": true,
+        "**/.qoder": true
+    },
+    
+    // 搜索排除
+    "search.exclude": {
+        "**/__pycache__": true,
+        "**/*.pyc": true,
+        "**/.pytest_cache": true,
+        "**/.qoder": true
+    },
+    
+    // 编辑器配置
+    "editor.rulers": [80, 120],
+    "editor.tabSize": 4,
+    "editor.insertSpaces": true,
+    
+    // 文件编码
+    "files.encoding": "utf8",
+    "files.eol": "\n",
+    
+    // Git 配置
+    "git.ignoreLimitWarning": true
+}
