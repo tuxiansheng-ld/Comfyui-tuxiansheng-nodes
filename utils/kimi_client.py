@@ -66,10 +66,31 @@ class KimiClient:
         base64_image = base64.b64encode(image_data).decode('utf-8')
         return f"data:image/{ext};base64,{base64_image}"
     
+    def normalize_base64_image(self, image_input: str) -> str:
+        """
+        规范化图片输入为 data URL 格式
+        
+        Args:
+            image_input: 可以是:
+                - 已经是 data URL 格式 (data:image/xxx;base64,xxx)
+                - 纯 base64 字符串
+                
+        Returns:
+            data URL 格式的字符串
+        """
+        # 如果已经是 data URL 格式，直接返回
+        if image_input.startswith('data:image'):
+            return image_input
+        
+        # 如果是纯 base64 字符串，添加默认的 data URL 前缀
+        # 默认使用 png 格式
+        return f"data:image/png;base64,{image_input}"
+    
     def chat(
         self,
         prompt: str,
         image_paths: Optional[Union[str, List[str]]] = None,
+        image_base64_list: Optional[Union[str, List[str]]] = None,
         system_prompt: Optional[str] = None,
         temperature: float = 0.3,
         max_tokens: int = 4000,
@@ -81,6 +102,7 @@ class KimiClient:
         Args:
             prompt: 用户提示词（必填）
             image_paths: 图片路径，可以是单个路径字符串或路径列表（可选）
+            image_base64_list: 图片 base64 编码，可以是单个字符串或列表（可选）
             system_prompt: 系统提示词，定义 AI 的角色和行为（可选）
             temperature: 温度参数，控制输出随机性 (0-1)，越低越确定
             max_tokens: 最大生成 token 数
@@ -108,23 +130,15 @@ class KimiClient:
         # 构建用户消息内容
         user_content = []
         
-        # 如果有图片，先添加图片
+        # 处理图片输入（支持文件路径和 base64 两种方式）
+        has_images = False
+        
+        # 处理文件路径方式的图片
         if image_paths:
+            has_images = True
             # 统一处理为列表
             if isinstance(image_paths, str):
                 image_paths = [image_paths]
-            
-            # 检查是否需要使用视觉模型
-            if 'vision' not in self.model:
-                # 自动切换到视觉模型
-                original_model = self.model
-                if '128k' in self.model:
-                    self.model = "moonshot-v1-128k-vision-preview"
-                elif '32k' in self.model:
-                    self.model = "moonshot-v1-32k-vision-preview"
-                else:
-                    self.model = "moonshot-v1-8k-vision-preview"
-                print(f"检测到图片输入，已自动切换模型: {original_model} -> {self.model}")
             
             # 添加所有图片
             for image_path in image_paths:
@@ -135,6 +149,35 @@ class KimiClient:
                         "url": image_url
                     }
                 })
+        
+        # 处理 base64 方式的图片
+        if image_base64_list:
+            has_images = True
+            # 统一处理为列表
+            if isinstance(image_base64_list, str):
+                image_base64_list = [image_base64_list]
+            
+            # 添加所有 base64 图片
+            for base64_img in image_base64_list:
+                image_url = self.normalize_base64_image(base64_img)
+                user_content.append({
+                    "type": "image_url",
+                    "image_url": {
+                        "url": image_url
+                    }
+                })
+        
+        # 如果有图片，检查是否需要使用视觉模型
+        if has_images and 'vision' not in self.model:
+            # 自动切换到视觉模型
+            original_model = self.model
+            if '128k' in self.model:
+                self.model = "moonshot-v1-128k-vision-preview"
+            elif '32k' in self.model:
+                self.model = "moonshot-v1-32k-vision-preview"
+            else:
+                self.model = "moonshot-v1-8k-vision-preview"
+            print(f"检测到图片输入，已自动切换模型: {original_model} -> {self.model}")
         
         # 添加文本提示词
         user_content.append({
@@ -223,6 +266,38 @@ class KimiClient:
             **kwargs
         )
     
+    def analyze_image_base64(
+        self,
+        image_base64: str,
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: int = 4000,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        分析单张 base64 编码的图片
+        
+        Args:
+            image_base64: 图片的 base64 编码字符串（可以包含或不包含 data:image 前缀）
+            prompt: 分析提示词
+            system_prompt: 系统提示词（可选）
+            temperature: 温度参数 (0-1)
+            max_tokens: 最大生成 token 数
+            **kwargs: 其他 API 参数
+            
+        Returns:
+            响应字典
+        """
+        return self.chat(
+            prompt=prompt,
+            image_base64_list=image_base64,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs
+        )
+    
     def analyze_images(
         self,
         image_paths: List[str],
@@ -249,6 +324,38 @@ class KimiClient:
         return self.chat(
             prompt=prompt,
             image_paths=image_paths,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens,
+            **kwargs
+        )
+    
+    def analyze_images_base64(
+        self,
+        image_base64_list: List[str],
+        prompt: str,
+        system_prompt: Optional[str] = None,
+        temperature: float = 0.3,
+        max_tokens: int = 4000,
+        **kwargs
+    ) -> Dict[str, Any]:
+        """
+        分析多张 base64 编码的图片
+        
+        Args:
+            image_base64_list: 图片 base64 编码字符串列表
+            prompt: 分析提示词
+            system_prompt: 系统提示词（可选）
+            temperature: 温度参数 (0-1)
+            max_tokens: 最大生成 token 数
+            **kwargs: 其他 API 参数
+            
+        Returns:
+            响应字典
+        """
+        return self.chat(
+            prompt=prompt,
+            image_base64_list=image_base64_list,
             system_prompt=system_prompt,
             temperature=temperature,
             max_tokens=max_tokens,

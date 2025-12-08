@@ -28,11 +28,13 @@ class StringToListNode(io.ComfyNode):
                     "input_string",
                     multiline=True,  # Allow multiline input
                     default="",  # Empty default
+                    lazy=True,
                 ),
                 io.String.Input(
                     "delimiter",
                     multiline=False,
                     default=",",  # Default delimiter is comma
+                    lazy=True,
                 )
             ],
             outputs=[
@@ -40,6 +42,15 @@ class StringToListNode(io.ComfyNode):
                 io.Int.Output(),  # Output the length of the list
             ],
         )
+
+    @classmethod
+    def check_lazy_status(cls, input_string, delimiter):
+        """
+        控制惰性输入的评估时机
+        
+        总是需要评估所有输入参数
+        """
+        return ["input_string", "delimiter"]
 
     @classmethod
     def execute(cls, input_string, delimiter) -> io.NodeOutput:
@@ -60,3 +71,13 @@ class StringToListNode(io.ComfyNode):
         # to preserve Chinese and other Unicode characters
         result = [item for item in input_string.split(delimiter) if item]
         return io.NodeOutput(result, len(result))
+
+
+# 节点映射配置
+NODE_CLASS_MAPPINGS = {
+    "StringToListNode": StringToListNode
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "StringToListNode": "String To List"
+}

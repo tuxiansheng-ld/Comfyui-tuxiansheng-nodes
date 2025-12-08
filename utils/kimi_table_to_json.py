@@ -146,6 +146,80 @@ JSON 数据必须是有效的、可解析的格式。"""
             max_tokens=max_tokens
         )
     
+    def extract_table_data_from_base64(
+        self,
+        image_base64: str,
+        json_template: Union[str, Dict, list],
+        custom_prompt: Optional[str] = None,
+        temperature: float = 0.1,
+        max_tokens: int = 4000
+    ) -> Dict[str, Any]:
+        """
+        根据 JSON 模板从 base64 编码的图片中提取数据
+        
+        Args:
+            image_base64: 图片的 base64 编码字符串（可以包含或不包含 data:image 前缀）
+            json_template: JSON 数据模板，可以是:
+                - 字符串: JSON 格式的字符串
+                - 字典: Python 字典对象
+                - 列表: Python 列表对象
+            custom_prompt: 自定义提示词，如果不提供则使用默认提示词
+            temperature: 温度参数，控制输出随机性 (0-1)，建议使用低温度保证准确性
+            max_tokens: 最大生成 token 数
+            
+        Returns:
+            包含提取的 JSON 数据和原始响应的字典
+        """
+        # 将 JSON 模板转换为字符串
+        if isinstance(json_template, (dict, list)):
+            template_str = json.dumps(json_template, ensure_ascii=False, indent=2)
+        else:
+            template_str = json_template
+        
+        # 构建默认提示词
+        if custom_prompt is None:
+            custom_prompt = f"""请仔细分析这张图片中的表格内容，然后按照以下 JSON 数据模板提取表格数据。
+
+【JSON 数据模板】
+```json
+{template_str}
+```
+
+【提取要求】
+1. 严格按照 JSON 模板的结构提取数据
+2. 准确识别表格中的每一行数据
+3. 确保字段名与模板完全一致
+4. 数值类型的数据保持为字符串格式（与模板一致）
+5. 如果某个字段在图片中不存在，使用空字符串 ""
+
+【输出要求】
+请只返回提取后的 JSON 数据，不要包含任何其他说明文字。
+JSON 数据必须是有效的、可解析的格式。"""
+        
+        # 系统提示词
+        system_prompt = "你是一个专业的数据提取专家，擅长从图片表格中准确提取结构化数据。你必须严格按照给定的 JSON 模板格式返回数据。"
+        
+        # 直接使用 KimiClient 的 base64 图片调用方法
+        result = self.client.chat(
+            prompt=custom_prompt,
+            image_base64_list=image_base64,
+            system_prompt=system_prompt,
+            temperature=temperature,
+            max_tokens=max_tokens
+        )
+        
+        # 提取 JSON 数据
+        json_data = self._extract_json(result["content"])
+        
+        return {
+            "json_data": json_data,
+            "raw_content": result["content"],
+            "raw_response": result["raw_response"],
+            "image_path": "base64_image",
+            "image_source": "base64",
+            "usage": result["usage"]
+        }
+    
     def _extract_json(self, content: str) -> Union[Dict, list, None]:
         """
         从 API 响应内容中提取 JSON 数据
