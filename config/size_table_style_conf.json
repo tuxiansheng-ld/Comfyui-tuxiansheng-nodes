@@ -1,0 +1,18 @@
+{
+  "styles": [
+    {
+      "name": "style1_size_table",
+      "html_template": "table_template/style1.html",
+      "json_data_template": "table_template/style1.json",
+      "sugguest_width": 800,
+      "sugguest_height": 600
+    },
+    {
+      "name": "style2_advice_table",
+      "html_template": "table_template/style2.html",
+      "json_data_template": "table_template/style2.json",
+      "sugguest_width": 800,
+      "sugguest_height": 600
+    }
+  ]
+}
