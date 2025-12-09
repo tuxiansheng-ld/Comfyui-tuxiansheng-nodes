@@ -2,19 +2,26 @@ import os
 import sys
 from comfy_api.latest import io
 
-# 处理相对导入 - 添加父目录到 sys.path
+# 处理模块导入 - 确保父目录在 sys.path 中
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# 导入工具类
+# 直接导入模块，不经过 utils.__init__
 try:
-    from utils.TableRenderer import TableRenderer
-except ImportError as e:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "TableRenderer",
+        os.path.join(parent_dir, "utils", "TableRenderer.py")
+    )
+    table_renderer_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(table_renderer_module)
+    TableRenderer = table_renderer_module.TableRenderer
+except Exception as e:
     print(f"[TableRendererNode] 导入失败: {e}")
-    print(f"[TableRendererNode] 当前路径: {os.getcwd()}")
-    print(f"[TableRendererNode] sys.path: {sys.path[:3]}")
+    import traceback
+    traceback.print_exc()
     raise
 
 

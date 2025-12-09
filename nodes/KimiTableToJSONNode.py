@@ -4,13 +4,27 @@ import json
 from typing import Optional
 from comfy_api.latest import io
 
-# 处理相对导入
+# 处理模块导入 - 确保父目录在 sys.path 中
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# 直接导入模块，不经过 utils.__init__
 try:
-    from ..utils.kimi_table_to_json import KimiTableToJSON
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    from utils.kimi_table_to_json import KimiTableToJSON
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "kimi_table_to_json",
+        os.path.join(parent_dir, "utils", "kimi_table_to_json.py")
+    )
+    kimi_table_to_json_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(kimi_table_to_json_module)
+    KimiTableToJSON = kimi_table_to_json_module.KimiTableToJSON
+except Exception as e:
+    print(f"[KimiTableToJSONNode] 导入失败: {e}")
+    import traceback
+    traceback.print_exc()
+    raise
 
 
 class KimiTableToJSONNode(io.ComfyNode):

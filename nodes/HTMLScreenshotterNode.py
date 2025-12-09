@@ -2,19 +2,26 @@ import os
 import sys
 from comfy_api.latest import io
 
-# 处理相对导入 - 添加父目录到 sys.path
+# 处理模块导入 - 确保父目录在 sys.path 中
 current_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(current_dir)
 if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
-# 导入工具类
+# 直接导入模块，不经过 utils.__init__
 try:
-    from utils.HTMLScreenshotter import HTMLScreenshotter
-except ImportError as e:
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "HTMLScreenshotter",
+        os.path.join(parent_dir, "utils", "HTMLScreenshotter.py")
+    )
+    html_screenshotter_module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(html_screenshotter_module)
+    HTMLScreenshotter = html_screenshotter_module.HTMLScreenshotter
+except Exception as e:
     print(f"[HTMLScreenshotterNode] 导入失败: {e}")
-    print(f"[HTMLScreenshotterNode] 当前路径: {os.getcwd()}")
-    print(f"[HTMLScreenshotterNode] sys.path: {sys.path[:3]}")
+    import traceback
+    traceback.print_exc()
     raise
 
 
