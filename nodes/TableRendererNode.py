@@ -2,13 +2,20 @@ import os
 import sys
 from comfy_api.latest import io
 
-# 处理相对导入
+# 处理相对导入 - 添加父目录到 sys.path
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
+
+# 导入工具类
 try:
-    from ..utils.TableRenderer import TableRenderer
-except ImportError:
-    # 如果相对导入失败，尝试绝对导入
-    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from utils.TableRenderer import TableRenderer
+except ImportError as e:
+    print(f"[TableRendererNode] 导入失败: {e}")
+    print(f"[TableRendererNode] 当前路径: {os.getcwd()}")
+    print(f"[TableRendererNode] sys.path: {sys.path[:3]}")
+    raise
 
 
 class TableRendererNode(io.ComfyNode):
