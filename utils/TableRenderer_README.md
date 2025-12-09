@@ -413,7 +413,7 @@ except ValueError as e:
 python test/test_table_renderer.py
 
 # 运行示例代码
-python utils/TableRenderer.py
+python utils/table_renderer.py
 ```
 
 ## 许可证

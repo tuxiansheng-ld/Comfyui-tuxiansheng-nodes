@@ -4,8 +4,8 @@
 from .kimi_table_to_html import KimiTableToHTML
 from .kimi_table_to_json import KimiTableToJSON
 from .kimi_client import KimiClient
-from .HTMLScreenshotter import HTMLScreenshotter
-from .TableRenderer import TableRenderer
+from .html_screenshotter import HTMLScreenshotter
+from .table_renderer import TableRenderer
 
 __all__ = [
     'KimiTableToHTML',

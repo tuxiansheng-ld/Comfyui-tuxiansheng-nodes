@@ -63,10 +63,11 @@ class HTMLScreenshotter:
     ) -> torch.Tensor:
         """
         从HTML内容字符串截图并返回PyTorch tensor（为ComfyUI节点设计）。
+        注意：只控制宽度，高度为实际渲染高度，如果实际宽度与目标不符则等比缩放到目标宽度。
 
         :param html_string: HTML内容的字符串。
         :param width: 截图的期望宽度（像素），如果未提供则使用默认宽度。
-        :param height: 截图的期望高度（像素），如果未提供则使用默认高度。
+        :param height: 窗口高度参考值（像素），用于初始渲染，如果未提供则使用默认高度。注意：这不是最终截图高度，最终高度由内容决定。
         :return: PyTorch tensor，格式为 [1, height, width, 3]，值范围 0-1
         """
         width = width or self.default_width
@@ -100,22 +101,29 @@ class HTMLScreenshotter:
             # 截图到内存 - 使用精确尺寸截图
             screenshot_bytes = self.driver.get_screenshot_as_png()
             
-            # 验证并调整截图尺寸（防止DPI缩放导致尺寸不匹配）
-            temp_img = Image.open(io.BytesIO(screenshot_bytes))
-            actual_width, actual_height = temp_img.size
+            # 验证并调整截图尺寸（只控制宽度，高度等比缩放）
+            img = Image.open(io.BytesIO(screenshot_bytes))
+            actual_width, actual_height = img.size
             
-            if actual_width != width or actual_height != height:
-                print(f"[HTMLScreenshotter] 检测到尺寸偏差: 期望{width}x{height}, 实际{actual_width}x{actual_height}，正在调整...")
-                # 使用高质量重采样调整到目标尺寸
-                temp_img = temp_img.resize((width, height), Image.Resampling.LANCZOS)
-                # 转换回字节流
-                buffer = io.BytesIO()
-                temp_img.save(buffer, format='PNG')
-                screenshot_bytes = buffer.getvalue()
-                print(f"[HTMLScreenshotter] 已调整为目标尺寸: {width}x{height}")
+            print(f"[HTMLScreenshotter] 原始截图尺寸: {actual_width}x{actual_height}")
+            
+            # 如果实际宽度与目标宽度不同，进行等比缩放
+            if actual_width != width:
+                # 计算缩放比例
+                scale_ratio = width / actual_width
+                new_height = int(actual_height * scale_ratio)
+                
+                print(f"[HTMLScreenshotter] 检测到宽度偏差: 目标{width}px, 实际{actual_width}px")
+                print(f"[HTMLScreenshotter] 等比缩放: {actual_width}x{actual_height} → {width}x{new_height} (比例: {scale_ratio:.3f})")
+                
+                # 使用高质量重采样进行等比缩放
+                img = img.resize((width, new_height), Image.Resampling.LANCZOS)
+                print(f"[HTMLScreenshotter] 已调整为: {width}x{new_height}")
+            else:
+                print(f"[HTMLScreenshotter] 宽度匹配，无需缩放")
             
             # 将调整后的字节数据转换为PIL Image
-            img = Image.open(io.BytesIO(screenshot_bytes))
+            # (已经是img对象，无需再次转换)
             
             # 转换为RGB模式
             if img.mode != 'RGB':
@@ -127,7 +135,8 @@ class HTMLScreenshotter:
             # 转换为PyTorch tensor，格式: [1, height, width, 3]
             img_tensor = torch.from_numpy(img_array).unsqueeze(0)
             
-            print(f"[HTMLScreenshotter] 截图成功，尺寸: {width}x{height}")
+            final_height, final_width = img_tensor.shape[1], img_tensor.shape[2]
+            print(f"[HTMLScreenshotter] 截图成功，最终尺寸: {final_width}x{final_height}")
             return img_tensor
             
         except Exception as e:

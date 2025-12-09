@@ -9,7 +9,7 @@ import unittest
 # 添加父目录到 Python 路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from utils.TableRenderer import TableRenderer
+from utils.table_renderer import TableRenderer
 
 
 class TestTableRenderer(unittest.TestCase):

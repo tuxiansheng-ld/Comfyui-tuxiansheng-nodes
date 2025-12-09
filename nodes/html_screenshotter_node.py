@@ -12,8 +12,8 @@ if parent_dir not in sys.path:
 try:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
-        "HTMLScreenshotter",
-        os.path.join(parent_dir, "utils", "HTMLScreenshotter.py")
+        "html_screenshotter",
+        os.path.join(parent_dir, "utils", "html_screenshotter.py")
     )
     html_screenshotter_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(html_screenshotter_module)

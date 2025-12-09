@@ -27,8 +27,8 @@ except ImportError:
     pass
 
 from utils.kimi_table_to_json import KimiTableToJSON
-from utils.TableRenderer import TableRenderer
-from utils.HTMLScreenshotter import HTMLScreenshotter
+from utils.table_renderer import TableRenderer
+from utils.html_screenshotter import HTMLScreenshotter
 
 
 class TestWorkflowIntegration(unittest.TestCase):
@@ -63,7 +63,7 @@ class TestWorkflowIntegration(unittest.TestCase):
         print("=" * 70)
         
         # 定义文件路径
-        image_path = r"D:\data\comfyui-image\尺码2.png"  # 替换为实际图片路径
+        image_path = r"D:\\data\\comfyui-image\\尺码2.png"  # 替换为实际图片路径
         template_file = os.path.join(self.project_root, "table_template", "style1.json")
         html_template = os.path.join(self.project_root, "table_template", "style1.html")
         

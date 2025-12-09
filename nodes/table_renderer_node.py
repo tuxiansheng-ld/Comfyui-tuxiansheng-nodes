@@ -12,8 +12,8 @@ if parent_dir not in sys.path:
 try:
     import importlib.util
     spec = importlib.util.spec_from_file_location(
-        "TableRenderer",
-        os.path.join(parent_dir, "utils", "TableRenderer.py")
+        "table_renderer",
+        os.path.join(parent_dir, "utils", "table_renderer.py")
     )
     table_renderer_module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(table_renderer_module)
