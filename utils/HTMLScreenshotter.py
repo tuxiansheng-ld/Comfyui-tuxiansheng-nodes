@@ -1,4 +1,10 @@
 import os
+import io
+import torch
+import numpy as np
+import tempfile
+from urllib.parse import quote
+from PIL import Image
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -36,6 +42,8 @@ class HTMLScreenshotter:
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
         chrome_options.add_argument("--disable-gpu")
+        chrome_options.add_argument("--force-device-scale-factor=1")  # 禁用DPI缩放，确保1:1像素
+        chrome_options.add_argument("--high-dpi-support=1")  # 支持高DPI但使用scale=1
         chrome_options.add_argument(f"--window-size={self.default_width}x{self.default_height}") # 设置默认窗口大小
         
         try:
@@ -47,6 +55,96 @@ class HTMLScreenshotter:
             print("请确保已安装Chrome浏览器和正确的chromedriver，并提供了正确的路径。")
             self.driver = None
 
+    def capture_from_string_to_tensor(
+        self, 
+        html_string: str, 
+        width: int = None, 
+        height: int = None
+    ) -> torch.Tensor:
+        """
+        从HTML内容字符串截图并返回PyTorch tensor（为ComfyUI节点设计）。
+
+        :param html_string: HTML内容的字符串。
+        :param width: 截图的期望宽度（像素），如果未提供则使用默认宽度。
+        :param height: 截图的期望高度（像素），如果未提供则使用默认高度。
+        :return: PyTorch tensor，格式为 [1, height, width, 3]，值范围 0-1
+        """
+        width = width or self.default_width
+        height = height or self.default_height
+        
+        if not self.driver:
+            print("WebDriver未初始化，无法截图。")
+            # 返回黑色占位图片
+            return torch.zeros((1, height, width, 3), dtype=torch.float32)
+
+        temp_file = None
+        try:
+            # 由于复杂HTML使用data URI可能导致解析问题，改用临时文件方式
+            # 创建临时HTML文件
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False, encoding='utf-8') as f:
+                f.write(html_string)
+                temp_file = f.name
+            
+            # 使用file URI加载临时文件
+            abs_path = os.path.abspath(temp_file)
+            file_uri = f"file:///{abs_path.replace(os.sep, '/')}"
+            self.driver.get(file_uri)
+            
+            # 设置窗口尺寸
+            self.driver.set_window_size(width, height)
+            
+            # 等待页面加载完成
+            import time
+            time.sleep(0.5)  # 等待500ms确保渲染完成
+            
+            # 截图到内存 - 使用精确尺寸截图
+            screenshot_bytes = self.driver.get_screenshot_as_png()
+            
+            # 验证并调整截图尺寸（防止DPI缩放导致尺寸不匹配）
+            temp_img = Image.open(io.BytesIO(screenshot_bytes))
+            actual_width, actual_height = temp_img.size
+            
+            if actual_width != width or actual_height != height:
+                print(f"[HTMLScreenshotter] 检测到尺寸偏差: 期望{width}x{height}, 实际{actual_width}x{actual_height}，正在调整...")
+                # 使用高质量重采样调整到目标尺寸
+                temp_img = temp_img.resize((width, height), Image.Resampling.LANCZOS)
+                # 转换回字节流
+                buffer = io.BytesIO()
+                temp_img.save(buffer, format='PNG')
+                screenshot_bytes = buffer.getvalue()
+                print(f"[HTMLScreenshotter] 已调整为目标尺寸: {width}x{height}")
+            
+            # 将调整后的字节数据转换为PIL Image
+            img = Image.open(io.BytesIO(screenshot_bytes))
+            
+            # 转换为RGB模式
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # 转换为numpy数组并归一化到0-1范围
+            img_array = np.array(img).astype(np.float32) / 255.0
+            
+            # 转换为PyTorch tensor，格式: [1, height, width, 3]
+            img_tensor = torch.from_numpy(img_array).unsqueeze(0)
+            
+            print(f"[HTMLScreenshotter] 截图成功，尺寸: {width}x{height}")
+            return img_tensor
+            
+        except Exception as e:
+            print(f"[HTMLScreenshotter] 截图失败: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            # 返回黑色占位图片
+            return torch.zeros((1, height, width, 3), dtype=torch.float32)
+        
+        finally:
+            # 清理临时文件
+            if temp_file and os.path.exists(temp_file):
+                try:
+                    os.unlink(temp_file)
+                except Exception as e:
+                    print(f"[HTMLScreenshotter] 删除临时文件失败: {str(e)}")
+    
     def capture_from_string(self, html_string: str, output_image: str, width: int = None, height: int = None):
         """
         从HTML内容字符串进行截图。

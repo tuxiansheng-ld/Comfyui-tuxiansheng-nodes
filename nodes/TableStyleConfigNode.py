@@ -78,6 +78,8 @@ class TableStyleConfigNode(io.ComfyNode):
                 io.Int.Output(display_name="Width"),     # 宽度
                 io.Int.Output(display_name="Height"),     # 高度
                 io.Image.Output(display_name="Preview"),  # 预览图片
+                io.Int.Output(display_name="Crop Width"),  # 建议裁剪宽度
+                io.Int.Output(display_name="Crop Height"),  # 建议裁剪高度
             ],
         )
 
@@ -108,7 +110,7 @@ class TableStyleConfigNode(io.ComfyNode):
         Returns:
         --------
         NodeOutput
-            包含HTML模板、JSON模板、宽度、高度
+            包含HTML模板、JSON模板、宽度、高度、预览图片、建议裁剪宽度、建议裁剪高度
         """
         # 加载配置
         styles = cls._load_config()
@@ -123,7 +125,9 @@ class TableStyleConfigNode(io.ComfyNode):
         # 如果未找到配置，返回默认值
         if not selected_style:
             print(f"[TableStyleConfigNode] 未找到样式: {style_name}")
-            return io.NodeOutput("", "", 800, 600)
+            # 返回默认的黑色预览图片
+            default_preview = torch.zeros((1, 100, 100, 3), dtype=torch.float32)
+            return io.NodeOutput("", "", 800, 600, default_preview, 800, 600)
         
         # 读取HTML模板
         html_content = ""
@@ -188,7 +192,11 @@ class TableStyleConfigNode(io.ComfyNode):
             # 创建一个默认的黑色图片
             preview_image = torch.zeros((1, 100, 100, 3), dtype=torch.float32)
         
-        return io.NodeOutput(html_content, json_content, output_width, output_height, preview_image)
+        # 获取配置文件中的建议裁剪尺寸
+        crop_width = selected_style.get("sugguest_width", 800)
+        crop_height = selected_style.get("sugguest_height", 600)
+        
+        return io.NodeOutput(html_content, json_content, output_width, output_height, preview_image, crop_width, crop_height)
 
 
 # 节点映射配置

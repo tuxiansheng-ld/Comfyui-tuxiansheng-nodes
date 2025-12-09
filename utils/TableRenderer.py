@@ -14,6 +14,29 @@ class TableRenderer:
         """初始化表格渲染器"""
         pass
     
+    def render_table_from_strings(
+        self,
+        html_template: str,
+        json_data_str: str
+    ) -> str:
+        """
+        从字符串模板和 JSON 字符串填充表格（为 ComfyUI 节点设计）
+        
+        Args:
+            html_template: HTML 模板字符串
+            json_data_str: JSON 数据字符串
+            
+        Returns:
+            填充后的 HTML 字符串
+        """
+        # 解析 JSON 字符串
+        json_data = json.loads(json_data_str)
+        
+        # 填充数据
+        filled_html = self._fill_data(html_template, json_data)
+        
+        return filled_html
+    
     def render_table(
         self,
         html_template_path: str,
