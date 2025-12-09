@@ -111,10 +111,11 @@ class TableRenderer:
     def _fill_data(self, html_content: str, json_data: Dict[str, Any]) -> str:
         """
         填充数据到 HTML 模板（内部方法）
+        通用方法：基于占位符自动识别并填充数据
         
         Args:
-            html_content: HTML 模板内容
-            json_data: JSON 数据
+            html_content: HTML 模板内容（包含 {{field_name}} 占位符）
+            json_data: JSON 数据（必须包含 'data' 字段）
             
         Returns:
             填充后的 HTML 字符串
@@ -127,47 +128,48 @@ class TableRenderer:
         if not tbody:
             raise ValueError("HTML 模板中未找到 <tbody> 标签")
         
-        # 清空现有的数据行（保留表头行）
-        # 找到第一个 tr（表头行）
-        header_row = tbody.find('tr')
-        if not header_row:
-            raise ValueError("HTML 模板中 <tbody> 内未找到表头行")
+        # 查找模板行（包含占位符的行）
+        template_row = None
+        for row in tbody.find_all('tr'):
+            # 检查这一行是否包含占位符 {{…}}
+            row_text = row.get_text()
+            if '{{' in row_text and '}}' in row_text:
+                template_row = row
+                break
         
-        # 删除所有数据行（保留表头）
-        for row in tbody.find_all('tr')[1:]:  # 跳过第一行（表头）
+        if not template_row:
+            raise ValueError("HTML 模板中未找到包含占位符的模板行")
+        
+        # 提取模板行的结构（保留 class 等属性）
+        template_row_html = str(template_row)
+        row_class = template_row.get('class', [])
+        
+        # 删除所有数据行（包括模板行和注释）
+        for row in tbody.find_all('tr'):
             row.decompose()
+        
+        # 也删除注释
+        for comment in tbody.find_all(string=lambda text: isinstance(text, str) and text.strip().startswith('<!--')):
+            comment.extract()
         
         # 获取数据
         data_list = json_data.get('data', [])
         
         # 根据 JSON 数据生成新的行
         for item in data_list:
-            # 创建新行
-            new_row = soup.new_tag('tr')
-            new_row['class'] = 'size-cell'
+            # 从模板行创建新行
+            new_row_html = template_row_html
             
-            # 添加尺码列
-            size_cell = soup.new_tag('td')
-            size_cell.string = item.get('size', '')
-            new_row.append(size_cell)
+            # 替换所有占位符
+            for key, value in item.items():
+                placeholder = f'{{{{{key}}}}}'
+                new_row_html = new_row_html.replace(placeholder, str(value))
             
-            # 添加测量数据列
-            # 按照表头顺序：后中长、肩宽、胸围、摆围、袖长
-            measurements = [
-                item.get('back_length', ''),
-                item.get('shoulder_width', ''),
-                item.get('bust', ''),
-                item.get('hem', ''),
-                item.get('sleeve_length', '')
-            ]
-            
-            for value in measurements:
-                cell = soup.new_tag('td')
-                cell.string = str(value)
-                new_row.append(cell)
-            
-            # 将新行添加到 tbody
-            tbody.append(new_row)
+            # 解析新行并添加到 tbody
+            new_row_soup = BeautifulSoup(new_row_html, 'html.parser')
+            new_row = new_row_soup.find('tr')
+            if new_row:
+                tbody.append(new_row)
         
         # 返回格式化后的 HTML
         return soup.prettify()
@@ -196,13 +198,16 @@ class TableRenderer:
                 print("✗ 错误: 'data' 字段必须是数组")
                 return False
             
-            # 检查必需字段
-            required_fields = ['size', 'back_length', 'shoulder_width', 'bust', 'hem', 'sleeve_length']
+            # 检查是否有数据
+            if len(data['data']) == 0:
+                print("✗ 错误: 'data' 数组为空")
+                return False
+            
+            # 检查每条数据是否为字典
             for i, item in enumerate(data['data']):
-                for field in required_fields:
-                    if field not in item:
-                        print(f"✗ 错误: 第 {i+1} 条数据缺少 '{field}' 字段")
-                        return False
+                if not isinstance(item, dict):
+                    print(f"✗ 错误: 第 {i+1} 条数据必须是对象")
+                    return False
             
             print(f"✓ JSON 数据验证通过，共 {len(data['data'])} 条记录")
             return True
