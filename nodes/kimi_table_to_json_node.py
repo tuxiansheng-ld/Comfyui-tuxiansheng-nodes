@@ -1,5 +1,6 @@
 import os
 import json
+import hashlib
 from comfy_api.latest import io
 from tuxs.utils import KimiTableToJSON
 
@@ -162,6 +163,11 @@ class KimiTableToJSONNode(io.ComfyNode):
             print(f"[KimiTableToJSONNode] {error_msg}")
             return io.NodeOutput("", error_msg, "{}")
 
+    @classmethod
+    def fingerprint_inputs(cls, image_base64, json_template, api_key, temperature, max_tokens):
+        # 将 image_base64 和 json_template 组合后计算 hash
+        combined = f"{image_base64}{json_template}"
+        return hashlib.sha256(combined.encode('utf-8')).hexdigest()
 
 # 节点映射配置
 NODE_CLASS_MAPPINGS = {
